@@ -20,7 +20,8 @@ export function constrainFilter(
   originalFilter: Filter | undefined,
   constraint: AnyObject,
 ): Filter {
-  const builder = new FilterBuilder(originalFilter);
+  const filter = cloneDeep(originalFilter);
+  const builder = new FilterBuilder(filter);
   return builder.impose(constraint).build();
 }
 
@@ -36,7 +37,8 @@ export function constrainWhere(
   originalWhere: Where | undefined,
   constraint: AnyObject,
 ): Where {
-  const builder = new WhereBuilder(originalWhere);
+  const where = cloneDeep(originalWhere);
+  const builder = new WhereBuilder(where);
   return builder.impose(constraint).build();
 }
 

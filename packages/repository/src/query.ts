@@ -443,31 +443,30 @@ export class FilterBuilder {
   }
 
   /**
-   * Add a filter object. For conflicting keys with its where object,
-   * create an `and` clause. For any other properties, throw an error.
-   * @param filter filter object
+   * Add an object with open properties. If it is a filter object, create an `and`
+   * clause for conflicting keys with its where object. For any other properties,
+   * throw an error.
+   * @param constraint a constraint object to merge with own filter object
    */
-  impose(filter: Filter): this {
+  impose(constraint: AnyObject): this {
     if (!this.filter) {
-      this.filter = filter || {};
+      this.filter = constraint || {};
     } else if (this.filter) {
       if (
-        filter.fields ||
-        filter.include ||
-        filter.limit ||
-        filter.offset ||
-        filter.order ||
-        filter.skip
+        constraint.fields ||
+        constraint.include ||
+        constraint.limit ||
+        constraint.offset ||
+        constraint.order ||
+        constraint.skip
       ) {
         throw new Error(
           'merging strategy for selection, pagination, and sorting not implemented',
         );
       }
-      if (filter.where) {
-        this.filter.where = new WhereBuilder(this.filter.where)
-          .impose(filter.where)
-          .build();
-      }
+      this.filter.where = constraint.where
+        ? new WhereBuilder(this.filter.where).impose(constraint.where).build()
+        : new WhereBuilder(this.filter.where).impose(constraint).build();
     }
     return this;
   }
