@@ -4,86 +4,72 @@
 // License text available at https://opensource.org/licenses/MIT
 
 import {expect} from '@loopback/testlab';
-import {
-  FilterBuilder,
-  Filter,
-  Fields,
-  Where,
-  WhereBuilder,
-} from '../../../src/query';
-import {AnyObject} from 'loopback-datasource-juggler';
+import {FilterBuilder, Filter, Where, WhereBuilder} from '../../../src/query';
 import {
   constrainFilter,
   constrainWhere,
 } from '../../../src/repositories/constraint-utils';
+import {DataObject} from '../../../src/common-types';
+import {Entity} from '../../../src/model';
 
 describe('constraint utility functions', () => {
-  let originalFilter: Filter = {};
-  let originalWhere: Where = {};
-  const constraint: AnyObject = givenAWhereConstraint();
+  let inputFilter: Filter = {};
+  let inputWhere: Where = {};
 
   before(() => {
-    originalFilter = givenAFilter({a: true}, {x: 'x'}, 5);
-    originalWhere = givenAWhere();
+    inputFilter = givenAFilter();
+    inputWhere = givenAWhere();
   });
   context('constrainFilter', () => {
     it('applies a where constraint', () => {
-      const result = constrainFilter(originalFilter, constraint);
-      expect(result).to.deepEqual({
-        fields: {a: true},
-        limit: 5,
-        where: {x: 'x', id: '5'},
+      const constraint = {id: '5'};
+      const result = constrainFilter(inputFilter, constraint);
+      expect(result).to.containEql({
+        where: Object.assign({}, inputFilter.where, constraint),
       });
     });
     it('applies a filter constraint with where object', () => {
-      const validFilterConstraint = givenAFilter(
-        undefined,
-        {id: '10'},
-        undefined,
-      );
-      const result = constrainFilter(originalFilter, validFilterConstraint);
-      expect(result).to.deepEqual({
-        fields: {a: true},
-        limit: 5,
+      const constraint: Filter = {where: {id: '10'}};
+      const result = constrainFilter(inputFilter, constraint);
+      expect(result).to.containEql({
         where: {x: 'x', id: '10'},
       });
     });
 
     it('applies a filter constraint with duplicate key in where object', () => {
-      const filterWithDuplicateWhereKey = givenAFilter(
-        undefined,
-        {x: 'z'},
-        undefined,
-      );
-      const result = constrainFilter(
-        originalFilter,
-        filterWithDuplicateWhereKey,
-      );
-      expect(result).to.deepEqual({
-        fields: {a: true},
-        limit: 5,
+      const constraint: Filter = {where: {x: 'z'}};
+      const result = constrainFilter(inputFilter, constraint);
+      expect(result).to.containEql({
         where: {and: [{x: 'x'}, {x: 'z'}]},
       });
     });
 
     it('does not apply filter constraint with unsupported fields', () => {
-      const invalidFilterConstraint = givenAFilter(
-        {b: false},
-        {name: 'John'},
-        undefined,
-      );
+      const constraint: Filter = {
+        fields: {b: false},
+        where: {name: 'John'},
+      };
       expect(() => {
-        constrainFilter(originalFilter, invalidFilterConstraint);
+        constrainFilter(inputFilter, constraint);
       }).to.throw(/not implemented/);
     });
   });
   context('constrainWhere', () => {
     it('enforces a constraint', () => {
-      const result = constrainWhere(originalWhere, constraint);
+      const constraint = {id: '5'};
+      const result = constrainWhere(inputWhere, constraint);
       expect(result).to.deepEqual({
         x: 'x',
         y: 'y',
         id: '5',
+      });
+    });
+
+    it('enforces constraint with dup key', () => {
+      const constraint = {y: 'z'};
+      const result = constrainWhere(inputWhere, constraint);
+      expect(result).to.deepEqual({
+        and: [{x: 'x', y: 'y'}, {y: 'z'}],
       });
     });
   });
@@ -94,15 +80,12 @@ describe('constraint utility functions', () => {
   });
 
   /*---------------HELPERS----------------*/
-  function givenAFilter(fields?: Fields, where?: Where, limit?: number) {
-    const builder = new FilterBuilder();
-    if (fields) builder.fields(fields);
-    if (where) builder.where(where);
-    if (limit) builder.limit(limit);
-    return builder.build();
-  }
-  function givenAWhereConstraint() {
-    return {id: '5'};
+  function givenAFilter() {
+    return new FilterBuilder()
+      .fields({a: true})
+      .where({x: 'x'})
+      .limit(5)
+      .build();
   }
   function givenAWhere() {
     return new WhereBuilder()
