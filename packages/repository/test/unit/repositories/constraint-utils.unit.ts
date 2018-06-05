@@ -9,8 +9,6 @@ import {
   constrainFilter,
   constrainWhere,
 } from '../../../src/repositories/constraint-utils';
-import {DataObject} from '../../../src/common-types';
-import {Entity} from '../../../src/model';
 
 describe('constraint utility functions', () => {
   let inputFilter: Filter = {};
@@ -32,7 +30,7 @@ describe('constraint utility functions', () => {
       const constraint: Filter = {where: {id: '10'}};
       const result = constrainFilter(inputFilter, constraint);
       expect(result).to.containEql({
-        where: {x: 'x', id: '10'},
+        where: Object.assign({}, inputFilter.where, constraint.where),
       });
     });
 
@@ -40,7 +38,7 @@ describe('constraint utility functions', () => {
       const constraint: Filter = {where: {x: 'z'}};
       const result = constrainFilter(inputFilter, constraint);
       expect(result).to.containEql({
-        where: {and: [{x: 'x'}, {x: 'z'}]},
+        where: {and: [inputFilter.where, constraint.where]},
       });
     });
 
@@ -58,25 +56,16 @@ describe('constraint utility functions', () => {
     it('enforces a constraint', () => {
       const constraint = {id: '5'};
       const result = constrainWhere(inputWhere, constraint);
-      expect(result).to.deepEqual({
-        x: 'x',
-        y: 'y',
-        id: '5',
-      });
+      expect(result).to.deepEqual(Object.assign({}, inputWhere, constraint));
     });
 
     it('enforces constraint with dup key', () => {
       const constraint = {y: 'z'};
       const result = constrainWhere(inputWhere, constraint);
       expect(result).to.deepEqual({
-        and: [{x: 'x', y: 'y'}, {y: 'z'}],
+        and: [inputWhere, constraint],
       });
     });
-  });
-
-  context('constrainDataObject', () => {
-    it('constrain a single data object', () => {});
-    it('constrain array of data objects', () => {});
   });
 
   /*---------------HELPERS----------------*/
