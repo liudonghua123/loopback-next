@@ -41,49 +41,41 @@ export function constrainWhere(
   const builder = new WhereBuilder(where);
   return builder.impose(constraint).build();
 }
-
-export function constrainDataObject<T extends Entity>(
-  originalData: DataObject<T>,
-  constraint: AnyObject,
-): DataObject<T>;
-
-export function constrainDataObject<T extends Entity>(
-  originalData: DataObject<T>[],
-  constraint: AnyObject,
-): DataObject<T>[];
 /**
  * A utility function which takes a model instance data and enforces constraint(s)
  * on it
  * @param originalData the model data to apply the constrain(s) to
- * @param constraint the constraint which is to be applied on the filter
+ * @param constraint the constraint which is to be applied on the data object
  * @returns the modified data with the constraint, otherwise
  * the original instance data
  */
-// tslint:disable-next-line:no-any
-export function constrainDataObject(originalData: any, constraint: any): any {
+export function constrainDataObject<T extends Entity>(
+  originalData: DataObject<T>,
+  constraint: Partial<T>,
+): DataObject<T> {
   const constrainedData = cloneDeep(originalData);
-  if (typeof originalData === 'object') {
-    addConstraintToDataObject(constrainedData, constraint);
-  } else if (isArray(originalData)) {
-    for (const data in originalData) {
-      addConstraintToDataObject(constrainedData[data], constraint[data]);
+  for (const c in constraint) {
+    constrainedData[c] = constraint[c];
+  }
+  return constrainedData;
+}
+/**
+ * A utility function which takes an array of model instance data and
+ * enforces constraint(s) on it
+ * @param originalData the array of model data to apply the constrain(s) to
+ * @param constraint the constraint which is to be applied on the data objects
+ * @returns an array of the modified data with the constraint, otherwise
+ * the original instance data array
+ */
+export function constrainDataObjects<T extends Entity>(
+  originalData: DataObject<T>[],
+  constraint: Partial<T>,
+): DataObject<T>[] {
+  const constrainedData = cloneDeep(originalData);
+  for (let obj of constrainedData) {
+    for (let prop in constraint) {
+      obj[prop] = constraint[prop];
     }
   }
   return constrainedData;
-
-  function addConstraintToDataObject(
-    modelData: AnyObject,
-    constrainObject: AnyObject,
-  ) {
-    for (const c in constrainObject) {
-      if (c in modelData) {
-        console.warn(
-          'Overwriting %s with %s',
-          modelData[c],
-          constrainObject[c],
-        );
-      }
-      modelData[c] = constrainObject[c];
-    }
-  }
 }
