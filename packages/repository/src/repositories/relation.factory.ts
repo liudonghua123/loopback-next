@@ -47,9 +47,9 @@ export function hasManyRepositoryFactory<SourceID, T extends Entity, ID>(
     case RelationType.hasMany:
       const fkConstraint = {[relationMetadata.keyTo]: sourceModelId};
 
-      return new DefaultHasManyEntityCrudRepository(
-        targetRepository,
-        fkConstraint,
-      );
+      return new DefaultHasManyEntityCrudRepository<
+        T,
+        EntityCrudRepository<T, ID>
+      >(targetRepository, fkConstraint);
   }
 }
